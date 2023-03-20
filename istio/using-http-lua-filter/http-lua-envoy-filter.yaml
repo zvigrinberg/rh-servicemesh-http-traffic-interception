@@ -1,0 +1,117 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: employees-http-lua-filter
+  namespace: test
+spec:
+  workloadSelector:
+    labels:
+      app: employees
+  configPatches:
+    # The first patch adds the lua filter to the listener/http connection manager
+    - applyTo: HTTP_FILTER
+      match:
+        context: SIDECAR_INBOUND
+        listener:
+          portNumber: 9999
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+              subFilter:
+                name: "envoy.filters.http.router"
+      patch:
+        operation: INSERT_BEFORE
+        value: # lua filter specification
+          name: envoy.filters.http.lua
+          typed_config:
+            "@type": "type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua"
+            inlineCode: |
+              function envoy_on_request(request_handle)
+                request_handle:logInfo("Start of envoy_on_request")
+                package.path = package.path .. ";/lua/libraries/json.lua"
+                json = require "json"
+                local headers = request_handle:headers()
+                request_handle:streamInfo():dynamicMetadata():set("envoy.filters.http.lua","X-Api-Key",headers:get("X-Api-Key"))
+                request_handle:streamInfo():dynamicMetadata():set("envoy.filters.http.lua","X-Data-Set-Type",headers:get("X-Data-Set-Type"))
+                request_handle:streamInfo():dynamicMetadata():set("envoy.filters.http.lua","X-Resource-Token",headers:get("X-Resource-Token"))
+                request_handle:logInfo("End of envoy_on_request")
+              end
+
+              function envoy_on_response(response_handle)
+                response_handle:logInfo("Start of envoy_on_response")
+                print(string.format("Start of envoy_on_response"))
+                package.path = package.path .. ";/lua/libraries/json.lua"
+                json = require "json"
+                local t = {}
+
+                t["countryCode"] = "GB"
+                t["dataOwningCountryCode"] = "GB"
+
+
+                t["jobType"] = "Restrict"
+                t["protectNullValues"] = true
+                t["preserveStringLength"] = false
+                t["manifestName"] = "Employee"
+                t["restrictedText"] = "***********"
+
+                local bodyFromMs = response_handle:body()
+                local bodyMs = tostring(bodyFromMs:getBytes(0, bodyFromMs:length()))
+                local bodyMsQuotes = string.gsub(bodyMs, "\"", "'")
+                t["dataSet"] = bodyMsQuotes
+
+                t["snapshotDate"] = "2023-03-20T00:00:00Z"
+                local apiGatorBody = json.encode(t)
+                print(string.format("apiGatorBody= %s",apiGatorBody))
+                response_handle:logInfo("Body request to apiGator rendered: "..apiGatorBody)
+                -- Make an HTTP call to an upstream host with the following headers, body, and timeout.
+                print(string.format("Checkpoint debug 1"))
+                local headers2, bodyString = response_handle:httpCall(
+                 "api_gator_api",
+                 {
+                  [":method"] = "POST",
+                  [":path"] = "/apigator/protect/v1/dataset",
+                  [":authority"] = "api.exate.co",
+                  ["X-Api-Key"] = os.getenv("apiKey"),
+                  ["X-Data-Set-Type"] = os.getenv("dataSetType"),
+                  ["X-Resource-Token"] = response_handle:streamInfo():dynamicMetadata():get("envoy.filters.http.lua")["X-Resource-Token"],
+#                  ["X-Resource-Token"] = response_handle:streamInfo():dynamicMetadata():get("envoy.filters.http.lua")["X-Resource-Token"],
+                  ["Content-Type"] = "application/json"
+                 },
+                apiGatorBody,
+                5000)
+                print(string.format("Checkpoint debug 2"))
+                print(string.format("bodyString= %s", bodyString))
+                for key, value in pairs(headers2) do
+                   print(string.format("key %s= %s",key,value))
+                end
+                print("")
+                response_handle:logInfo("Body Returned: ".. bodyString)
+                response_handle:logInfo("End of envoy_on_response")
+                response_handle:body():setBytes(bodyString)
+              end
+    # The second patch adds the cluster that is referenced by the lua code
+    # cds match is omitted as a new cluster is being added
+    - applyTo: CLUSTER
+      match:
+        context: SIDECAR_OUTBOUND
+      patch:
+        operation: ADD
+        value: # cluster specification
+          name: "api_gator_api"
+          transport_socket:
+            name: envoy.transport_sockets.tls
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          type: STRICT_DNS
+          connect_timeout: 0.5s
+          lb_policy: ROUND_ROBIN
+          load_assignment:
+            cluster_name: api_gator_api
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          protocol: TCP
+                          address: "api.exate.co"
+                          port_value: 443

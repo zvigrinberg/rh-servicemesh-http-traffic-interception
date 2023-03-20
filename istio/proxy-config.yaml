@@ -1,0 +1,22 @@
+apiVersion: networking.istio.io/v1beta1
+kind: ProxyConfig
+metadata:
+  name: employees-proxy-config
+  namespace: test
+spec:
+  selector:
+    matchLabels:
+      app: employees
+  concurrency: 0
+  environmentVariables:
+#    apiGatorAddress: https://api.exate.co:443/apigator/protect/v1/dataset
+    manifestName: "Employee"
+    jobType: "Restrict"
+    protectNullValues: "true"
+    preserveStringLength: "false"
+    snapshotDate: "2023-03-20T00:00:00Z"
+    restrictedText: "*********"
+    dataSetType: JSON
+    apiKey: b31e1928-5eee-48a2-bb44-7a12b6c70bdf
+
+

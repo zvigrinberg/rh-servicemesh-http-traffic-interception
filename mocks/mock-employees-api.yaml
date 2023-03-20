@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: employees-api
+
+spec:
+  selector:
+    matchLabels:
+      app: employees
+  template:
+    metadata:
+      labels:
+        app: employees
+      annotations:
+        sidecar.istio.io/inject: 'true'
+    spec:
+      imagePullSecrets:
+        - name: quay-puller
+      volumes:
+        - name: shared-volume
+          emptyDir: {}
+
+      initContainers:
+        - name: get-lua-lib
+          image: busybox
+          securityContext:
+            runAsUser: 1337
+          command: ["sh" ,"-c" , "mkdir -p /lua/libraries  ; wget --no-check-certificate https://raw.githubusercontent.com/rxi/json.lua/master/json.lua -O /lua/libraries/json.lua "]
+          volumeMounts:
+            - mountPath: /lua/libraries
+              name: shared-volume
+              readOnly: false
+      containers:
+        - name: wiremock-server
+          image: "quay.io/zgrinber/wiremock:latest"
+          command: [ "bash" , "-c" ,"java -jar /var/wiremock/lib/wiremock-jre8-standalone.jar --port 9999"]
+          ports:
+            - containerPort: 9999
+              name: http2-9999
+        - name: istio-proxy
+          image: auto
+          volumeMounts:
+            - mountPath: /lua/libraries
+              name: shared-volume
+

@@ -1,0 +1,18 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: apigator-svc
+spec:
+  hosts:
+    - exate.co
+  location: MESH_EXTERNAL
+  resolution: DNS
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  endpoints:
+  - address:  api.exate.co
+
+
+

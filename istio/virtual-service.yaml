@@ -1,0 +1,19 @@
+kind: VirtualService
+apiVersion: networking.istio.io/v1alpha3
+metadata:
+  name: employees-api
+  namespace: test
+  labels:
+    policyResource: "true"
+spec:
+  hosts:
+    - employees-api
+  http:
+    - route:
+        - destination:
+            host: employees-api.test.svc.cluster.local
+#            subset: v1
+          weight: 100
+#        - destination:
+#            host: employees-api.test.svc.cluster.local
+#            subset: v2
