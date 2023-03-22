@@ -18,5 +18,8 @@ spec:
     restrictedText: "*********"
     dataSetType: JSON
     apiKey: b31e1928-5eee-48a2-bb44-7a12b6c70bdf
+    clientId: postman
+    grantType: client_credentials
+    clientSecret: changeme
 
 

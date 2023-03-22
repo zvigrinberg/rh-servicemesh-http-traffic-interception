@@ -30,10 +30,31 @@ spec:
                 request_handle:logInfo("Start of envoy_on_request")
                 package.path = package.path .. ";/lua/libraries/json.lua"
                 json = require "json"
-                local headers = request_handle:headers()
-                request_handle:streamInfo():dynamicMetadata():set("envoy.filters.http.lua","X-Api-Key",headers:get("X-Api-Key"))
-                request_handle:streamInfo():dynamicMetadata():set("envoy.filters.http.lua","X-Data-Set-Type",headers:get("X-Data-Set-Type"))
-                request_handle:streamInfo():dynamicMetadata():set("envoy.filters.http.lua","X-Resource-Token",headers:get("X-Resource-Token"))
+                local reqBody = request_handle:body()
+                local stringReqBody = tostring(reqBody:getBytes(0, reqBody:length()))
+                local requestTable = json.decode(stringReqBody)
+                print(string.format("envoy_on_request - countryCode = %s, dataOwningCountryCode= %s  ", requestTable["countryCode"],requestTable["dataOwningCountryCode"]))
+                request_handle:streamInfo():dynamicMetadata():set("envoy.filters.http.lua","countryCode",requestTable["countryCode"])
+                request_handle:streamInfo():dynamicMetadata():set("envoy.filters.http.lua","dataOwningCountryCode",requestTable["dataOwningCountryCode"])
+                local client_id = os.getenv("clientId")
+                local client_secret = os.getenv("clientSecret")
+                local grant_type = os.getenv("grantType")
+                local urlEncodedBody = "client_id=" .. client_id .. "&client_secret=" .. client_secret .. "&grant_type=" .. grant_type
+                print(string.format("envoy_on_request - urlEncodedBody = %s ", urlEncodedBody))
+                local headers, bodyString = request_handle:httpCall(
+                "api_gator_api",
+                {
+                  [ ":method" ] = "POST",
+                  [ ":path" ] = "/apigator/identity/v1/token",
+                  [ ":authority" ] = "api.exate.co",
+                  [ "X-Api-Key" ] = os.getenv("apiKey"),
+                  [ "Content-Type" ] = "application/x-www-form-urlencoded"
+                },
+                urlEncodedBody,
+                5000)
+                local tokenTable = json.decode(bodyString)
+                print(string.format("envoy_on_request - token fetched = %s ", tokenTable["access_token"]))
+                request_handle:streamInfo():dynamicMetadata():set("envoy.filters.http.lua","access_token",tokenTable["access_token"])
                 request_handle:logInfo("End of envoy_on_request")
               end
 
@@ -44,27 +65,27 @@ spec:
                 json = require "json"
                 local t = {}
 
-                t["countryCode"] = "GB"
-                t["dataOwningCountryCode"] = "GB"
 
-
-                t["jobType"] = "Restrict"
+                t["dataOwningCountryCode"] = response_handle:streamInfo():dynamicMetadata():get("envoy.filters.http.lua")["dataOwningCountryCode"]
+                t["countryCode"] = response_handle:streamInfo():dynamicMetadata():get("envoy.filters.http.lua")["countryCode"]
+                t["jobType"] = os.getenv("jobType")
                 t["protectNullValues"] = true
                 t["preserveStringLength"] = false
-                t["manifestName"] = "Employee"
-                t["restrictedText"] = "***********"
+                t["manifestName"] = os.getenv("manifestName")
+                t["restrictedText"] = os.getenv("restrictedText")
 
                 local bodyFromMs = response_handle:body()
                 local bodyMs = tostring(bodyFromMs:getBytes(0, bodyFromMs:length()))
                 local bodyMsQuotes = string.gsub(bodyMs, "\"", "'")
                 t["dataSet"] = bodyMsQuotes
 
-                t["snapshotDate"] = "2023-03-20T00:00:00Z"
+                t["snapshotDate"] = os.getenv("snapshotDate")
                 local apiGatorBody = json.encode(t)
                 print(string.format("apiGatorBody= %s",apiGatorBody))
                 response_handle:logInfo("Body request to apiGator rendered: "..apiGatorBody)
                 -- Make an HTTP call to an upstream host with the following headers, body, and timeout.
                 print(string.format("Checkpoint debug 1"))
+                print(string.format("value of token = %s" , response_handle:streamInfo():dynamicMetadata():get("envoy.filters.http.lua")["access_token"]))
                 local headers2, bodyString = response_handle:httpCall(
                  "api_gator_api",
                  {
@@ -73,8 +94,7 @@ spec:
                   [":authority"] = "api.exate.co",
                   ["X-Api-Key"] = os.getenv("apiKey"),
                   ["X-Data-Set-Type"] = os.getenv("dataSetType"),
-                  ["X-Resource-Token"] = response_handle:streamInfo():dynamicMetadata():get("envoy.filters.http.lua")["X-Resource-Token"],
-#                  ["X-Resource-Token"] = response_handle:streamInfo():dynamicMetadata():get("envoy.filters.http.lua")["X-Resource-Token"],
+                  ["X-Resource-Token"] = "Bearer" .. " " .. response_handle:streamInfo():dynamicMetadata():get("envoy.filters.http.lua")["access_token"],
                   ["Content-Type"] = "application/json"
                  },
                 apiGatorBody,
