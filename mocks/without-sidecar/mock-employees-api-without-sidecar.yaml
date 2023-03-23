@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: employees-api
+
+spec:
+  selector:
+    matchLabels:
+      app: employees
+  template:
+    metadata:
+      labels:
+        app: employees
+      annotations:
+        sidecar.istio.io/inject: 'true'
+    spec:
+      imagePullSecrets:
+        - name: quay-puller
+        - name: dock-temp-cred
+      volumes:
+        - name: shared-volume
+          emptyDir: {}
+        - name: mocks-file
+          configMap:
+            name: json-mappings
+
+      initContainers:
+        - name: get-lua-lib
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 1337
+          command: ["sh" ,"-c" , "mkdir -p /lua/libraries  ; wget --no-check-certificate https://raw.githubusercontent.com/rxi/json.lua/master/json.lua -O /lua/libraries/json.lua "]
+          volumeMounts:
+            - mountPath: /lua/libraries
+              name: shared-volume
+              readOnly: false
+      containers:
+        - name: wiremock-server
+          image: "quay.io/zgrinber/wiremock:latest"
+          command: [ "bash" , "-c" ,"java -jar /var/wiremock/lib/wiremock-jre8-standalone.jar --port 9999"]
+          volumeMounts:
+            - mountPath: /tmp/mocks
+              name: mocks-file
+          ports:
+            - containerPort: 9999
+              name: http2-9999
+          lifecycle:
+            postStart:
+              exec:
+                command: [ "/bin/sh","-c", " sleep 1 ; curl -X POST http://localhost:9999/__admin/mappings/import -T /tmp/mocks/mappings.json " ]
+
+
+

@@ -4,8 +4,7 @@ metadata:
   name: build
 
 resources:
-- ./mappings
-- ./employees-api-svc.yaml
+- ../base
 - ./mock-employees-api.yaml
 
 commonLabels:

@@ -7,13 +7,13 @@ metadata:
     policyResource: "true"
 spec:
   hosts:
-    - employees-api
+    - "*"
+  gateways:
+    - demo-ingress      
   http:
-    - route:
-        - destination:
-            host: employees-api.test.svc.cluster.local
-#            subset: v1
-          weight: 100
-#        - destination:
-#            host: employees-api.test.svc.cluster.local
-#            subset: v2
+  - match: 
+    - uri:
+        exact: "/employees"
+    route:
+    - destination:
+        host: employees-api.test.svc.cluster.local

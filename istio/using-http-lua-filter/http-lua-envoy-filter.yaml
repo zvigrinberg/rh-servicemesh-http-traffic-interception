@@ -108,6 +108,11 @@ spec:
                 response_handle:logInfo("Body Returned: ".. bodyString)
                 response_handle:logInfo("End of envoy_on_response")
                 response_handle:body():setBytes(bodyString)
+                local originalHeaders = response_handle:headers()
+
+                for key, value in pairs(headers2) do
+                    response_handle:headers():replace(key,value)
+                end
               end
     # The second patch adds the cluster that is referenced by the lua code
     # cds match is omitted as a new cluster is being added
