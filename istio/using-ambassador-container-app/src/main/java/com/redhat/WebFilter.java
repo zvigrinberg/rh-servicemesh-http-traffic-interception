@@ -2,13 +2,20 @@ package com.redhat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
+import io.vertx.core.http.impl.Http1xServerRequest;
+import io.vertx.core.http.impl.HttpServerRequestWrapper;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
+
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.inject.Inject;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -25,6 +32,8 @@ public class WebFilter {
 
     private final Logger logger = Logger.getLogger("WebFilter.java");
     private final ObjectMapper om = new ObjectMapper();
+    @Inject
+    private SharedBuffer sharedBuffer;
     @ConfigProperty( name = "general.interceptor.address")
     private String interceptorAddress;
     @ConfigProperty( name = "general.interceptor.tokenAddress")
@@ -53,12 +62,23 @@ public class WebFilter {
     @ConfigProperty( name = "general.interceptor.jobType")
     private String jobType;
 
-    private Context context= Context.current();
+
     private static final Client client = ClientBuilder.newClient();
     @ServerRequestFilter
     public void getRequestPath(ContainerRequestContext requestContext) {
-          logger.info("in getRequestPath");
+        logger.info("in getRequestPath");
+        Map bodyMap = new HashMap();
+        try {
+
+            String requestBody = new String(requestContext.getEntityStream().readAllBytes());
+            bodyMap = om.readValue(requestBody,Map.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        sharedBuffer.getMapOfKeys().put(Span.current().getSpanContext().getTraceId(),bodyMap);
+          ;
           requestContext.getHeaders().put("x-route-to", List.of(requestContext.getUriInfo().getPath()));
+
 
         }
     @ServerResponseFilter
@@ -85,17 +105,20 @@ public class WebFilter {
                            .header("X-Api-Key",this.apiKey)
                            .header("X-Resource-Token", "Bearer " + token)
                            .header("X-Data-Set-Type",this.dataSetType)
-                           .header("Content-Type",this.dataSetType)
-               .post(Entity.entity(requestBody,APPLICATION_JSON));
+                           .header("Content-Type",APPLICATION_JSON)
+                           .post(Entity.entity(requestBody,APPLICATION_JSON));
 
       return finalBody.readEntity(String.class);
     }
 
     private InterceptorModel populateInterceptorBody(String responseBodyMS) {
         String adjustedResponseBody = responseBodyMS.replace("\"", "'");
+        Map propagatedRequestBody = sharedBuffer.getMapOfKeys().get(Span.current().getSpanContext().getTraceId());
+        String countryCode = propagatedRequestBody.get("countryCode") !=null ? (String) propagatedRequestBody.get("countryCode") : "GB";
+        String dataOwningCountryCode = propagatedRequestBody.get("dataOwningCountryCode") != null ? (String) propagatedRequestBody.get("dataOwningCountryCode") : "GB";
         return InterceptorModel.builder()
-                        .countryCode("GB")
-                        .dataOwningCountryCode("GB")
+                        .countryCode(countryCode)
+                        .dataOwningCountryCode(dataOwningCountryCode)
                         .protectNullValues(Boolean.getBoolean(this.protectNullValues))
                         .preserveStringLength(Boolean.getBoolean(this.preserveStringLength))
                         .manifestName(this.manifestName)
