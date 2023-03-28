@@ -66,11 +66,20 @@ public class WebFilter {
     private static final Client client = ClientBuilder.newClient();
     @ServerRequestFilter
     public void getRequestPath(ContainerRequestContext requestContext) {
-        logger.info("in getRequestPath");
+        String requestBody = "";
+        String headers= "";
+        try {
+            requestBody = new String(requestContext.getEntityStream().readAllBytes());
+            headers = om.writerWithDefaultPrettyPrinter().writeValueAsString(requestContext.getHeaders());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        logger.infof("Received a Request, \n Headers= %s , \n url = %s  , \n body = %s \n" , headers,requestContext.getUriInfo().getRequestUri().toString(),requestBody);
         Map bodyMap = new HashMap();
         try {
 
-            String requestBody = new String(requestContext.getEntityStream().readAllBytes());
+
             bodyMap = om.readValue(requestBody,Map.class);
         } catch (IOException e) {
             e.printStackTrace();
