@@ -17,3 +17,5 @@ spec:
     route:
     - destination:
         host: employees-api.test.svc.cluster.local
+        port:
+          number: 9999

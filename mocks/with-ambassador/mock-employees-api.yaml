@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: employees-api
+  annotations:
+    inject-proxy-traffic-interceptor: 'true'
+spec:
+  selector:
+    matchLabels:
+      app: employees
+  template:
+    metadata:
+      labels:
+        app: employees
+      annotations:
+        sidecar.istio.io/inject: 'true'
+        inject-proxy-traffic-interceptor: 'true'
+    spec:
+      imagePullSecrets:
+        - name: quay-puller
+      volumes:
+        - name: mocks-file
+          configMap:
+            name: json-mappings
+
+      containers:
+        - name: wiremock-server
+          image: "quay.io/zgrinber/wiremock:latest"
+          command: [ "bash" , "-c" ,"java -jar /var/wiremock/lib/wiremock-jre8-standalone.jar --port 9999"]
+          volumeMounts:
+            - mountPath: /tmp/mocks
+              name: mocks-file
+          ports:
+            - containerPort: 9999
+              name: http
+          lifecycle:
+            postStart:
+              exec:
+                command: [ "/bin/sh","-c", " sleep 1 ; curl -X POST http://localhost:9999/__admin/mappings/import -T /tmp/mocks/mappings.json " ]

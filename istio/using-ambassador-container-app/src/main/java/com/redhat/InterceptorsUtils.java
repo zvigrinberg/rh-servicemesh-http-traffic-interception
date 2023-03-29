@@ -8,6 +8,10 @@ public class InterceptorsUtils {
         String result = "";
         String keyWithServiceName ="";
         String podName =  System.getenv().get("POD_NAME");
+        if (podName == null || podName.trim().equals(""))
+        {
+            podName =  System.getenv().get("HOSTNAME");
+        }
         Set<String> env_keys = System.getenv().keySet();
         Set<String> envServicePortKeys = env_keys.stream().filter(s -> s.endsWith("SERVICE_PORT") && !s.contains("KUBERNETES")).collect(Collectors.toSet());
         for (String key : envServicePortKeys) {

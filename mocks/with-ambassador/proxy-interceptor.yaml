@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: doesNotMatter
+spec:
+  template:
+    spec:
+      containers:
+        - name: proxy-traffic-interceptor
+          image: "quay.io/zgrinber/traffic-interceptor-quarkus:2"
+          ports:
+            - name: proxy
+              containerPort: 10000

@@ -1,0 +1,14 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Sidecar
+metadata:
+  name: employees
+spec:
+  workloadSelector:
+    labels:
+      app: employees
+  ingress:
+    - port:
+        number: 9999
+        protocol: HTTPS
+        name: http
+      defaultEndpoint: 127.0.0.1:10000

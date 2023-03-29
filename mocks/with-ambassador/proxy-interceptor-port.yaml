@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: employees-api
+spec:
+  ports:
+    - name: proxy
+      port: 10000
+      protocol: TCP
+      targetPort: 10000

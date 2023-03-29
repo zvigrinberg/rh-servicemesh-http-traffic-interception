@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    sidecar.istio.io/inject: 'true'
+  labels:
+    run: rest-api-client
+  name: rest-api-client
+spec:
+  containers:
+  - command: ["bash", "-c" , "sleep infinity"]
+    image: ubi8/ubi:8.5-226
+    name: rest-api-client
+    resources: {}
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+

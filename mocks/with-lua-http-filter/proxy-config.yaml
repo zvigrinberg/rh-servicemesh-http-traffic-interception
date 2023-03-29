@@ -2,7 +2,6 @@ apiVersion: networking.istio.io/v1beta1
 kind: ProxyConfig
 metadata:
   name: employees-proxy-config
-  namespace: test
 spec:
   selector:
     matchLabels:
@@ -20,6 +19,6 @@ spec:
     apiKey: b31e1928-5eee-48a2-bb44-7a12b6c70bdf
     clientId: postman
     grantType: client_credentials
-    clientSecret: changeme
+    clientSecret: BGpAmjEn74C8Np
 
 

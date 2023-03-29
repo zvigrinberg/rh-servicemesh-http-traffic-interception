@@ -6,3 +6,4 @@ metadata:
 spec:
   members:
   - test
+  - test-ambassador
