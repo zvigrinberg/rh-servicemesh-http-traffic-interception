@@ -5,6 +5,7 @@ metadata:
     sidecar.istio.io/inject: 'true'
   labels:
     run: rest-api-client
+    intercepted-by-proxy: "true"
   name: rest-api-client
 spec:
   containers:
