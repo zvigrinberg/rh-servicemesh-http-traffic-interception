@@ -1,1 +1,1 @@
-# k8s-http-traffic-interception
+# rh-servicemesh-http-traffic-interception
