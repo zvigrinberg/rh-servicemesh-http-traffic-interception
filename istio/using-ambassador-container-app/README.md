@@ -15,7 +15,9 @@ To provide a generic way to Intercept http Traffic on the request and on the res
 
 
 ### Procedure
-Chose [JAVA Quarkus Framework](https://quarkus.io/) to build the Proxy Interceptor Application.
+Chose [JAVA Quarkus Framework](https://quarkus.io/) to build the Proxy Interceptor Application. \
+
+**Note: The proxy application assuming that per pod,  there is only one pod' container port exposed through k8s service, and this is the microservice' serving port.** 
 #### Ambassador Mode
 1. create new project test-ambassador
 ```shell
