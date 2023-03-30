@@ -7,3 +7,4 @@ spec:
   members:
   - test
   - test-ambassador
+  - test-sa
