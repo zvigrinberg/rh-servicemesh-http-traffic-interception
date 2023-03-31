@@ -2,10 +2,13 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 metadata:
   name: build
-
+namespace: test-outside-mesh
 resources:
 - ../base
 - ./mock-employees-api-without-sidecar.yaml
+- ./namespace.yaml
+- ./rbac.yaml
+- ./route.yaml
 
 commonLabels:
   purpose: mock-microservice
