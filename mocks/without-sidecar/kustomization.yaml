@@ -7,8 +7,8 @@ resources:
 - ../base
 - ./mock-employees-api-without-sidecar.yaml
 - ./namespace.yaml
-- ./rbac.yaml
 - ./route.yaml
+
 
 commonLabels:
   purpose: mock-microservice

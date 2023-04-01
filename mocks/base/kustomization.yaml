@@ -6,6 +6,7 @@ metadata:
 resources:
 - ./mappings
 - ./employees-api-svc.yaml
+- ./rbac.yaml
 
 commonLabels:
   purpose: mock-microservice
