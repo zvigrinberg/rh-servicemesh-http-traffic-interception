@@ -1,4 +1,4 @@
-package com.redhat;
+package com.redhat.serviceinterceptor;
 
 import com.oracle.svm.core.annotate.Inject;
 

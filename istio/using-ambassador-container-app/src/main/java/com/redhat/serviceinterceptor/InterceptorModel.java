@@ -1,4 +1,4 @@
-package com.redhat;
+package com.redhat.serviceinterceptor;
 
 import lombok.Builder;
 import lombok.Data;

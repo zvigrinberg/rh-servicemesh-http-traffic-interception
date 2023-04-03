@@ -1,4 +1,4 @@
-package com.redhat;
+package com.redhat.serviceinterceptor;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.specimpl.MultivaluedTreeMap;

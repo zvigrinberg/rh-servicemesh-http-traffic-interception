@@ -1,11 +1,8 @@
-package com.redhat;
+package com.redhat.serviceinterceptor;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.context.Context;
-import io.vertx.core.http.impl.Http1xServerRequest;
-import io.vertx.core.http.impl.HttpServerRequestWrapper;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
