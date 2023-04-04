@@ -5,9 +5,19 @@ metadata:
 spec:
   template:
     spec:
+      volumes:
+        - name: annotations
+          downwardAPI:
+            items:
+              - path: "annotations"
+                fieldRef:
+                  fieldPath: metadata.annotations
       containers:
         - name: proxy-traffic-interceptor
-          image: "quay.io/zgrinber/traffic-interceptor-quarkus:2"
+          image: "quay.io/zgrinber/traffic-interceptor-quarkus:3"
           ports:
             - name: proxy
               containerPort: 10000
+          volumeMounts:
+            - mountPath: /tmp/annotations
+              name: annotations

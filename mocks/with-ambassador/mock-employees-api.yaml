@@ -4,6 +4,7 @@ metadata:
   name: employees-api
   annotations:
     inject-proxy-traffic-interceptor: 'true'
+    sidecar.istio.io/inject: 'true'
 spec:
   selector:
     matchLabels:
@@ -15,6 +16,13 @@ spec:
       annotations:
         sidecar.istio.io/inject: 'true'
         inject-proxy-traffic-interceptor: 'true'
+        test-me: "hello-there!"
+        manifestName: Employee
+        jobType: Restrict
+        clientId: postman
+        servicePort: "9999"
+        protectNullValues: "true"
+        preserveStringLength: "false"
     spec:
       imagePullSecrets:
         - name: quay-puller
@@ -22,11 +30,15 @@ spec:
         - name: mocks-file
           configMap:
             name: json-mappings
-
       containers:
         - name: wiremock-server
           image: "quay.io/zgrinber/wiremock:latest"
           command: [ "bash" , "-c" ,"java -jar /var/wiremock/lib/wiremock-jre8-standalone.jar --port 9999"]
+          env:
+            - name: test-me
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.annotations['test-me']
           volumeMounts:
             - mountPath: /tmp/mocks
               name: mocks-file
