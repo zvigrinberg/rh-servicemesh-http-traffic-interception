@@ -3,6 +3,7 @@ package com.redhat.serviceinterceptor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.opentelemetry.api.trace.Span;
+import lombok.Data;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
@@ -24,40 +25,40 @@ import javax.ws.rs.core.Response;
 import static javax.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
-
+@Data
 public class WebFilter {
 
     private final Logger logger = Logger.getLogger("WebFilter.java");
     private final ObjectMapper om = new ObjectMapper();
     @Inject
-    private SharedBuffer sharedBuffer;
+    protected  SharedBuffer sharedBuffer;
     @ConfigProperty( name = "general.interceptor.address")
-    private String interceptorAddress;
+    String interceptorAddress;
     @ConfigProperty( name = "general.interceptor.tokenAddress")
-    private String tokenAddress;
+    String tokenAddress;
 
     @ConfigProperty( name = "general.interceptor.snapshotDate")
-    private String snapshotDate;
+    String snapshotDate;
     @ConfigProperty( name = "general.interceptor.restrictedText")
-    private String restrictedText;
+    String restrictedText;
     @ConfigProperty( name = "general.interceptor.manifestName")
-    private String manifestName;
+    String manifestName;
     @ConfigProperty( name = "general.interceptor.protectNullValues")
-    private String protectNullValues;
+    String protectNullValues;
     @ConfigProperty( name = "general.interceptor.preserveStringLength")
-    private String preserveStringLength;
+    String preserveStringLength;
     @ConfigProperty( name = "general.interceptor.apiKey")
-    private String apiKey;
+    protected String apiKey;
     @ConfigProperty( name = "general.interceptor.grantType")
-    private String grantType;
+    String grantType;
     @ConfigProperty( name = "general.interceptor.clientId")
-    private String clientId;
+    String clientId;
     @ConfigProperty( name = "general.interceptor.clientSecret")
-    private String clientSecret;
+    protected String clientSecret;
     @ConfigProperty( name = "general.interceptor.dataSetType")
-    private String dataSetType;
+    String dataSetType;
     @ConfigProperty( name = "general.interceptor.jobType")
-    private String jobType;
+    String jobType;
 
 
     private static final Client client = ClientBuilder.newClient();

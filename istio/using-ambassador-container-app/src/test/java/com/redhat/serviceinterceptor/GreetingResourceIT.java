@@ -1,4 +1,4 @@
-package com.redhat;
+package com.redhat.serviceinterceptor;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 

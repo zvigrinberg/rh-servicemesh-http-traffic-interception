@@ -36,6 +36,8 @@ public class OpenshiftAnnotationsConfigSource implements ConfigSource {
         ifNotEmptySetConfigProperty(restrictedText,"general.interceptor.restrictedText");
         String jobType = getAnnotationValue(annotations,"jobType");
         ifNotEmptySetConfigProperty(jobType,"general.interceptor.jobType");
+        String servicePort = getAnnotationValue(annotations,"servicePort");
+        ifNotEmptySetConfigProperty(servicePort,"general.interceptor.servicePort");
 
     }
 
