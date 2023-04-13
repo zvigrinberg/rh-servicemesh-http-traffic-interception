@@ -22,6 +22,10 @@ spec:
           host: proxy-interceptor.test-sa.svc.cluster.local
           port:
             number: 10000
+        headers:
+          request:
+            add:
+              x-source-origin: pod-within-mesh
   - match:
     - uri:
         prefix: "/employees"
@@ -32,4 +36,7 @@ spec:
           host: proxy-interceptor.test-sa.svc.cluster.local
           port:
             number: 10000
-
+        headers:
+          request:
+            add:
+              x-source-origin: ingress-gateway
