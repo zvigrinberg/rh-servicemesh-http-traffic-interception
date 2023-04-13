@@ -76,8 +76,6 @@ public class WebFilter {
         logger.infof("Received a Request, \n Headers= %s , \n url = %s  , \n body = %s \n" , headers,requestContext.getUriInfo().getRequestUri().toString(),requestBody);
         Map bodyMap = new HashMap();
         try {
-
-
             bodyMap = om.readValue(requestBody,Map.class);
         } catch (IOException e) {
             e.printStackTrace();
@@ -85,8 +83,8 @@ public class WebFilter {
         sharedBuffer.getMapOfKeys().put(Span.current().getSpanContext().getTraceId(),bodyMap);
           ;
           requestContext.getHeaders().put("x-route-to", List.of(requestContext.getUriInfo().getPath()));
-
-
+          requestContext.getHeaders().put("x-host-name",List.of(requestContext.getUriInfo().getRequestUri().getHost()));
+          requestContext.getHeaders().put("x-port-no",List.of(Integer.valueOf(requestContext.getUriInfo().getRequestUri().getPort()).toString()));
         }
     @ServerResponseFilter
     public void getResponsePath(ContainerResponseContext responseContext) {

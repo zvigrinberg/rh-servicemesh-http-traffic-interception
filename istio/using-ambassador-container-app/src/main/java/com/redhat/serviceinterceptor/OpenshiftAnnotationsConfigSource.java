@@ -1,7 +1,10 @@
 package com.redhat.serviceinterceptor;
 
 import io.quarkus.runtime.annotations.StaticInitSafe;
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.config.spi.ConfigSource;
+import org.jboss.logging.Logger;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -13,15 +16,26 @@ import java.util.Set;
 @StaticInitSafe
 public class OpenshiftAnnotationsConfigSource implements ConfigSource {
     public final static int annotationsConfigSourceOrdinal = 280;
+
+    private static final Logger logger = Logger.getLogger("OpenshiftAnnotationsConfigSource.java");
     private static final Map<String, String> annotations = new HashMap<>();
     static
     {
-        String annotationsPath = System.getenv("ANNOTATIONS_PATH");
-        if (annotationsPath==null)
-            annotationsPath="/tmp/annotations/..data/annotations";
+//        String interceptorMode = ConfigProvider.getConfig().getValue("general.interceptor.mode",String.class);
+//        Default running mode for proxy is ambassador container
+        String interceptorMode = System.getenv("INTERCEPTOR_MODE") == null ? "ambassador" : System.getenv("INTERCEPTOR_MODE");
+        if(interceptorMode.trim().equalsIgnoreCase("ambassador")) {
+            logger.info("Proxy Interceptor is running in ambassador container mode, overriding configuration and environment variables from pod' Annotations (for all config that exists)");
+            String annotationsPath = System.getenv("ANNOTATIONS_PATH");
+            if (annotationsPath == null)
+                annotationsPath = "/tmp/annotations/..data/annotations";
 
-        loadAnnotationToConfig(annotationsPath);
-
+            loadAnnotationToConfig(annotationsPath);
+        }
+        else
+        {
+            logger.info("Proxy Interceptor is running in standalone mode, Configuration is overridden from environment variables only.");
+        }
     }
 
     private static void loadAnnotationToConfig(String annotationsPath) {

@@ -36,9 +36,9 @@ public class AllResources {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{s:.*}")
-    public Response handleGet(@HeaderParam("x-route-to")  String routeTo) {
+    public Response handleGet(@HeaderParam("x-route-to") String routeTo, @HeaderParam("x-host-name") String hostName, @HeaderParam("x-port-no") String portNumber ) {
         logger.info("got a get Response");
-        ServiceParametersEntity serviceParametersEntity = setServiceParameters();
+        ServiceParametersEntity serviceParametersEntity = setServiceParameters(hostName, portNumber);
 
         MyResponseEntity response = invokeMicroservice.run(routeTo, serviceParametersEntity.getFinalPort(), serviceParametersEntity.getTransportAndHost());
         return Response.ok(response.getResponseBody()).replaceAll(response.getHeaders()).build();
@@ -48,14 +48,14 @@ public class AllResources {
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{s:.*}")
-    public Response handlePost(@HeaderParam("x-route-to") String routeTo) {
+    public Response handlePost(@HeaderParam("x-route-to") String routeTo , @HeaderParam("x-host-name") String hostName, @HeaderParam("x-port-no") String portNumber) {
         logger.info("got a POST Response");
-        ServiceParametersEntity serviceParametersEntity = setServiceParameters();
+        ServiceParametersEntity serviceParametersEntity = setServiceParameters(hostName,portNumber);
         MyResponseEntity response = invokeMicroservice.run(routeTo, serviceParametersEntity.getFinalPort(), serviceParametersEntity.getTransportAndHost());
         return Response.ok(response.getResponseBody()).replaceAll(response.getHeaders()).build();
     }
 
-    private ServiceParametersEntity setServiceParameters() {
+    private ServiceParametersEntity setServiceParameters(String hostName, String portNumber) {
         String finalPort;
         String transportAndHost;
         if(interceptorMode.equalsIgnoreCase("ambassador"))
@@ -69,8 +69,8 @@ public class AllResources {
 
         }
         else{
-            transportAndHost = "http://localhost:";
-            finalPort=servicePort;
+            transportAndHost = "http://" +  hostName + ":";
+            finalPort= portNumber;
         }
         return new ServiceParametersEntity(finalPort,transportAndHost);
     }
