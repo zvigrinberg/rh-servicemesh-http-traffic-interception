@@ -1,0 +1,35 @@
+kind: VirtualService
+apiVersion: networking.istio.io/v1alpha3
+metadata:
+  name: ingress-gateway-to-employees
+  labels:
+    policyResource: "true"
+spec:
+  hosts:
+  - "*.test-sa.svc.cluster.local"
+  - istio-ingressgateway.istio.system.svc.cluster.local
+  - istio-ingressgateway-istio-system.apps.exate-us-west.fsi.rhecoeng.com
+
+  gateways:
+    - demo-ingress
+    - mesh
+  http:
+  - match:
+    - sourceLabels:
+        intercepted-by-proxy: "true"
+    route:
+      - destination:
+          host: proxy-interceptor.test-sa.svc.cluster.local
+          port:
+            number: 10000
+  - match:
+    - uri:
+        prefix: "/employees"
+    rewrite:
+      authority: employees-api:9999
+    route:
+      - destination:
+          host: proxy-interceptor.test-sa.svc.cluster.local
+          port:
+            number: 10000
+

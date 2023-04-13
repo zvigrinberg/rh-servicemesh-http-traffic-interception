@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: proxy-interceptor
+  labels:
+    app: proxy-interceptor
+spec:
+  selector:
+    matchLabels:
+      app: proxy-interceptor
+  template:
+    metadata:
+      labels:
+        app: proxy-interceptor
+      annotations:
+        sidecar.istio.io/inject: 'true'
+    spec:
+      containers:
+        - name: proxy-traffic-interceptor
+          image: "quay.io/zgrinber/traffic-interceptor-quarkus:3"
+          ports:
+            - name: proxy
+              containerPort: 10000
+          env:
+            - name: INTERCEPTOR_MODE
+              value: standalone
+
