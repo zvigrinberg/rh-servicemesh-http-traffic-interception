@@ -8,6 +8,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
+import org.jboss.resteasy.specimpl.MultivaluedTreeMap;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -91,12 +92,17 @@ public class WebFilter {
         logger.info("in getResponsePath");
         String responseBodyMS = responseContext.getEntity().toString();
         String token = getTokenForInvocation();
-        String theResponse = invokeInterceptor(token,responseBodyMS);
-        responseContext.setEntity(theResponse);
+        logger.infof("Retrieved Token=%s", token);
+        MyResponseEntity theResponse = invokeInterceptor(token,responseBodyMS);
+        logger.infof("Response from Interceptor Service=%s", theResponse);
+        responseContext.setEntity(theResponse.getResponseBody());
+        responseContext.getHeaders().clear();
+        responseContext.getHeaders().putAll(theResponse.getHeaders());
+
 
         }
 
-    private String invokeInterceptor(String token, String responseBodyMS) {
+    private MyResponseEntity invokeInterceptor(String token, String responseBodyMS) {
        WebTarget interceptorServer = client.target(this.interceptorAddress);
         InterceptorModel theBody = populateInterceptorBody(responseBodyMS);
         String requestBody="";
@@ -105,6 +111,7 @@ public class WebFilter {
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
+        MyResponseEntity myResponseEntity = new MyResponseEntity();
         Response finalBody = interceptorServer
                            .request()
                            .header("X-Api-Key",this.apiKey)
@@ -112,8 +119,10 @@ public class WebFilter {
                            .header("X-Data-Set-Type",this.dataSetType)
                            .header("Content-Type",APPLICATION_JSON)
                            .post(Entity.entity(requestBody,APPLICATION_JSON));
-
-      return finalBody.readEntity(String.class);
+        myResponseEntity.setHeaders((MultivaluedTreeMap<String, Object>)finalBody.getHeaders());
+        String responseBody = finalBody.readEntity(String.class);
+        myResponseEntity.setResponseBody(responseBody);
+       return myResponseEntity;
     }
 
     private InterceptorModel populateInterceptorBody(String responseBodyMS) {

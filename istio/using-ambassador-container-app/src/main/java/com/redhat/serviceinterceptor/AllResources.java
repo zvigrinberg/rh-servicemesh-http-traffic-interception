@@ -52,6 +52,7 @@ public class AllResources {
         logger.info("got a POST Response");
         ServiceParametersEntity serviceParametersEntity = setServiceParameters(hostName,portNumber);
         MyResponseEntity response = invokeMicroservice.run(routeTo, serviceParametersEntity.getFinalPort(), serviceParametersEntity.getTransportAndHost());
+        logger.infof("Response body from microservice : %s", response.getResponseBody());
         return Response.ok(response.getResponseBody()).replaceAll(response.getHeaders()).build();
     }
 
