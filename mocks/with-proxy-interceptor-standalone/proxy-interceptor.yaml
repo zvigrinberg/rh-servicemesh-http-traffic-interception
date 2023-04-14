@@ -17,11 +17,16 @@ spec:
     spec:
       containers:
         - name: proxy-traffic-interceptor
-          image: "quay.io/zgrinber/traffic-interceptor-quarkus:3"
+          image: "quay.io/zgrinber/traffic-interceptor-quarkus:6"
           ports:
             - name: proxy
               containerPort: 10000
           env:
             - name: INTERCEPTOR_MODE
               value: standalone
-
+            - name: LISTENING_PORT
+              value: "10000"
+            - name: MANIFEST_NAME
+              value: Employee
+            - name: JOB_TYPE
+              value: Restrict
