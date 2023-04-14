@@ -6,7 +6,8 @@ metadata:
     policyResource: "true"
 spec:
   hosts:
-  - "*.test-sa.svc.cluster.local"
+#  - "*.test-sa.svc.cluster.local"
+  - employees-api.test-sa.svc.cluster.local
   - istio-ingressgateway.istio.system.svc.cluster.local
   - istio-ingressgateway-istio-system.apps.exate-us-west.fsi.rhecoeng.com
 
@@ -14,7 +15,17 @@ spec:
     - demo-ingress
     - mesh
   http:
-  - match:
+  - name: route-from-proxy-interceptor-itself
+    match:
+    - sourceLabels:
+        app: "proxy-interceptor"
+    route:
+        - destination:
+            host: employees-api.test-sa.svc.cluster.local
+            port:
+              number: 9999
+  - name: route-from-internal-clients
+    match:
     - sourceLabels:
         intercepted-by-proxy: "true"
     route:
@@ -26,7 +37,8 @@ spec:
           request:
             add:
               x-source-origin: pod-within-mesh
-  - match:
+  - name: route-from-outside-mesh-via-ingress-gateway
+    match:
     - uri:
         prefix: "/employees"
     rewrite:
