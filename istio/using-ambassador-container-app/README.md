@@ -164,6 +164,16 @@ spec:
     - demo-ingress
     - mesh
   http:
+  - name: prevent-interception-with-designated-header
+    match:
+      - headers:
+          bypass-interception:
+            exact: "true"
+    route:
+      - destination:
+          host: employees-api.test-sa.svc.cluster.local
+          port:
+            number: 9999     
   - name: route-from-proxy-interceptor-itself
     match:
     - sourceLabels:
