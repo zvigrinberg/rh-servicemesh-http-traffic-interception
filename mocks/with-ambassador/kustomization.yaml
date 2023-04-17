@@ -10,7 +10,7 @@ resources:
 - ./sidecar.yaml
 - ./ingress-gateway.yaml
 - ./virtual-service.yaml
-- ./namespace.yaml
+#- ./namespace.yaml
 
 
 patches:

@@ -17,6 +17,27 @@ To provide a generic way to Intercept http Traffic on the request and on the res
 ### Procedure
 Chose [JAVA Quarkus Framework](https://quarkus.io/) to build the Proxy Interceptor Application. \
 
+#### Building Proxy Interceptor Image
+
+1. First, Build the JAR file of proxy interceptor Application
+```shell
+ ./mvnw package
+```
+
+2. Using your favorite Containers CLI Tool (Docker/Podman/Buildah) to build the image:
+```shell
+podman build -f src/main/docker/Dockerfile.jvm -t registry-server-address.io/youraccount/traffic-interceptor-quarkus:1 .
+```
+
+3. Authenticate to your account at the registry and input your password once prompted:
+```shell
+podman login registry-server-address.io --username youruser
+```
+4. Push the image to registry:
+```shell
+podman push registry-server-address.io/youraccount/traffic-interceptor-quarkus:1
+```
+
 **Note: The proxy application assuming that per pod,  there is only one pod' container port exposed through k8s service, and this is the microservice' serving port.** 
 #### Ambassador Mode
 1. create new project test-ambassador
@@ -27,7 +48,7 @@ oc new-project test-ambassador
 2. If not already installed on cluster, [Install RH Service mesh Using the operator](../rhsm-istio-operator/servicemesh-operator/README.md), with test-ambassador project inside the ServiceMesh MemberRoll Instance.
 
 
-3. Deploy Istio' `SideCar` custom resource to override default envoy proxy behavior inherited from mesh control plane, It will forward all ingress traffic comming to service on port 9999 to port 10000 on the loopback localhost network interface ( which in case of a POD is a network common to all containers), that way it will pass all traffic of pod to the proxy interceptor container:
+3. Deploy Istio' `SideCar` custom resource to override default envoy proxy behavior inherited from mesh control plane, It will forward all ingress traffic coming to service on port 9999 to port 10000 on the loopback localhost network interface ( which in case of a POD is a network common to all containers), that way it will pass all traffic of pod to the proxy interceptor container:
 ```yaml
 apiVersion: networking.istio.io/v1alpha3
 kind: Sidecar
@@ -122,7 +143,7 @@ spec:
         - "*"
 ```
 ```shell
-f
+oc apply -f ../../mocks/with-proxy-interceptor-standalone/ingress-gateway.yaml
 ```
 3. Create virtual Service to define all routes, from outside cluster, from within mesh, and from proxy interceptor, to the microservice service( need to be created as per microservice' service):
 ```yaml
@@ -183,13 +204,13 @@ spec:
 ```
 
 ```shell
-
+oc apply -f ../../mocks/with-proxy-interceptor-standalone/virtual-service.yaml
 ```
 4. Deploy Employees microservice and proxy interceptor deployments ( it will also automate steps 2-3 and namespace creation as well):
 ```shell
 kustomize build ../../mocks/with-proxy-interceptor-standalone | oc apply -f -
 ```
-8. Wait a few seconds and run the microservice:
+5. Wait a few seconds and run the microservice:
 ```shell
 curl -i --location --request POST 'http://istio-ingressgateway-istio-system.apps.exate-us-west.fsi.rhecoeng.com/employees' --header 'Content-Type: application/json' -d '{"countryCode": "GB", "dataOwningCountryCode": "IT"}'
 ```
@@ -217,9 +238,51 @@ set-cookie: cd10b69e39387eb7ec9ac241201ab1ab=7707cb491b328913d50465deab41c3fb; p
 
 {"dataSet":"{\n  \"employees\": {\n    \"employee\": [\n      {\n        \"id\": \"1\",\n        \"firstName\": \"*********\",\n        \"lastName\": \"*********\",\n        \"fullName\": \"Robert Brownforest\",\n        \"DOB\": \"01/01/0001\",\n        \"email\": \"RB1@exate.com\",\n        \"photo\": \"https://pbs.twimg.com/profile_images/735509975649378305/B81JwLT7.jpg\"\n      },\n      {\n        \"id\": \"2\",\n        \"firstName\": \"*********\",\n        \"lastName\": \"*********\",\n        \"fullName\": \"Rip Van Winkle\",\n        \"DOB\": \"01/01/0001\",\n        \"email\": \"RVW1@exate.com\",\n        \"photo\": \"https://pbs.twimg.com/profile_images/735509975649378305/B81JwLT7.jpg\"\n      }\n    ]\n  }\n}"}
 ```
+6. Open kiali, and if needed, authenticate using Openshift Credentials:
+```shell
+xdg-open http://$(oc get route kiali -n istio-system -o=jsonpath="{..spec.host}")
+```
+Note: You can Enter the following command and copy+paste it into browser in order to enter it manually in the URL bar:
+```shell
+oc get route kiali -n istio-system -o=jsonpath="{..spec.host}"
+```
 
+7. Execute 2 HTTP Requests 50 times in a loop, in order to see the traffic flows at kiali dashboard:
+```shell
+export HOST=http://istio-ingressgateway-istio-system.apps.exate-us-west.fsi.rhecoeng.com
+for i in {1..50}
+do 
+curl --location --request POST ''$HOST'/employees' --header 'Content-Type: application/json'  --data-raw '{"countryCode": "IL", "dataOwningCountryCode": "IL"}'
+sleep 1
+echo
+echo
+curl --location --request POST ''$HOST'/employees' --header 'Content-Type: application/json' --header 'bypass-interception: true' --data-raw '{"countryCode": "IL", "dataOwningCountryCode": "IL"}'
+echo  
+echo
+done
+```
 
-8. When finished, uninstall everything:
+8. In parallel , on another terminal window, create a rest client pod and enter it:
+```shell
+oc apply -f ../../rest-client-pod-sidecar.yaml
+oc wait --for=condition=Ready=true pod/rest-api-client
+oc exec -it rest-api-client -- bash
+```
+9. From inside the client pod, execute 2 HTTP Requests 50 times in a loop, in order to see the traffic flows at kiali dashboard:
+```shell
+export HOST=http://employees-api.test-sa:9999
+for i in {1..50}
+do 
+curl --location --request POST ''$HOST'/employees' --header 'Content-Type: application/json'  --data-raw '{"countryCode": "IL", "dataOwningCountryCode": "IL"}'
+sleep 1
+echo
+echo
+curl --location --request POST ''$HOST'/employees' --header 'Content-Type: application/json'  --header 'bypass-interception: true' --data-raw '{"countryCode": "IL", "dataOwningCountryCode": "IL"}'
+echo  
+echo
+done
+```
+10. When finished, uninstall everything:
 ```shell
 kustomize build ../../mocks/with-proxy-interceptor-standalone | oc delete -f -
 ```

@@ -5,7 +5,7 @@ metadata:
 namespace: test-sa
 resources:
 - ../base
--  ./namespace.yaml
+#-  ./namespace.yaml
 - ./mock-employees-api.yaml
 - ./ingress-gateway.yaml
 - ./virtual-service.yaml
