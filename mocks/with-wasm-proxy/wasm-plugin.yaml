@@ -1,0 +1,42 @@
+apiVersion: extensions.istio.io/v1alpha1
+kind: WasmPlugin
+metadata:
+  name: apigator-wasm-plugin
+spec:
+  selector:
+    matchLabels:
+      intercept-payload: "true"
+  url: oci://quay.io/zgrinber/golang-wasm-plugin:latest
+  imagePullPolicy: IfNotPresent
+#  imagePullSecret: my-pull-secret
+  pluginConfig:
+    value: test
+  vmConfig:
+    env:
+      - name: JOB_TYPE
+        valueFrom: HOST
+
+      - name: CLIENT_ID
+        valueFrom: HOST
+
+      - name: CLIENT_SECRET
+        valueFrom: HOST
+
+      - name: API_KEY
+        valueFrom: HOST
+
+      - name: RESTRICTED_TEXT
+        valueFrom: HOST
+
+      - name: MANIFEST_NAME
+        valueFrom: HOST
+
+      - name: PROTECT_NULL_VALUES
+        valueFrom: HOST
+
+      - name: PRESERVE_STRING_LENGTH
+        valueFrom: HOST
+
+      - name: INTERCEPTOR_CLUSTER_NAME
+        value: outbound|443||exate.co
+

@@ -1,0 +1,30 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: apigator-svc
+spec:
+  hosts:
+    - exate.co
+  location: MESH_EXTERNAL
+  resolution: DNS
+  ports:
+  - number: 443
+    name: https
+    protocol: TLS
+  endpoints:
+  - address:  api.exate.co
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name:  originate-tls-apigator-svc
+spec:
+  host: exate.co
+  trafficPolicy:
+    tls:
+      mode: SIMPLE
+
+
+
+

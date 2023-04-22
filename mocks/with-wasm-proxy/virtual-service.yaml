@@ -1,0 +1,22 @@
+kind: VirtualService
+apiVersion: networking.istio.io/v1alpha3
+metadata:
+  name: employees-api
+  labels:
+    policyResource: "true"
+spec:
+  hosts:
+    - istio-ingressgateway-istio-system.apps.exate-us-west.fsi.rhecoeng.com
+    - employees-api.test.svc.cluster.local
+  gateways:
+    - demo-ingress
+    - mesh
+  http:
+  - match:
+    - uri:
+        exact: "/employees"
+    route:
+    - destination:
+        host: employees-api.test.svc.cluster.local
+        port:
+          number: 9999

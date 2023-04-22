@@ -8,8 +8,15 @@ spec:
     accessLogging:
       file:
         name: /dev/stdout
-  logging:
-    componentLevels: trace
+  general:
+    logging:
+      logAsJSON: false
+      componentLevels:
+        name: debug
+        level: debug
+      logLevels:
+        name: debug
+        level: debug
   addons:
     grafana:
       enabled: true

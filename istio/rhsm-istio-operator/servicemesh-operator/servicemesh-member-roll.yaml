@@ -8,3 +8,4 @@ spec:
   - test
   - test-ambassador
   - test-sa
+  - test-wasm

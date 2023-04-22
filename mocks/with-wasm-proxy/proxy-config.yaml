@@ -1,0 +1,21 @@
+apiVersion: networking.istio.io/v1beta1
+kind: ProxyConfig
+metadata:
+  name: employees-proxy-config
+spec:
+  selector:
+    matchLabels:
+      app: employees
+  concurrency: 0
+  environmentVariables:
+    MANIFEST_NAME: "Employee"
+    JOB_TYPE: "Restrict"
+    PROTECT_NULL_VALUES: "true"
+    PRESERVE_STRING_LENGTH: "false"
+    SNAPSHOT_DATE: "2023-03-20T00:00:00Z"
+    RESTRICTED_TEXT: "*********"
+    API_KEY: b31e1928-5eee-48a2-bb44-7a12b6c70bdf
+    CLIENT_ID: postman
+    CLIENT_SECRET: BGpAmjEn74C8Np
+
+

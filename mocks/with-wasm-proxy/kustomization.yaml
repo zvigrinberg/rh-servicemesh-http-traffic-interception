@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+sortOptions:
+  order: fifo
+metadata:
+  name: build
+namespace: test-wasm
+resources:
+- ../base
+- ./proxy-config.yaml
+- ./mock-employees-api.yaml
+- ./service-entry.yaml
+- ./virtual-service.yaml
+- ./ingress-gateway.yaml
+- ./wasm-plugin.yaml
+
+commonLabels:
+  purpose: mock-microservice
+
