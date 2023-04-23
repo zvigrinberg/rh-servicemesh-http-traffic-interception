@@ -17,7 +17,7 @@
 2. Traffic Interception Using [Generic Interceptor Proxy Application](istio/using-ambassador-container-app/README.md):
    1. Ambassador Container Mode.
    2. Standalone Mode.
-3. Traffic Interception Using [Wasm plugin](https://istio.io/latest/docs/reference/config/proxy_extensions/wasm-plugin/), TBD.
+3. Traffic Interception Using [Wasm plugin](https://istio.io/latest/docs/reference/config/proxy_extensions/wasm-plugin/), [Here](./istio/using-wasm-plugin/README.md)
 
 **Note: If one of the namespaces deleted from cluster and recreated, and servicemesh member roll CustomResource is out of sync ( Namespace is not returned to SM Member Roll or not shown on Kiali), you can use the replacement strategy to recreate the member roll CR:**
 ```shell

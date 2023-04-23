@@ -246,7 +246,7 @@ spec:
 kustomize build ../../mocks/with-wasm-proxy/ | oc apply -f -
 ```
 
-10. Open Kiali Dashboard 
+10. Open Kiali Dashboard In your default web browser.
 ```shell
 xdg-open http://$(oc get route kiali -n istio-system -o=jsonpath="{..spec.host}")
 
