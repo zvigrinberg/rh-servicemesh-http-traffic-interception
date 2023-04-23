@@ -13,18 +13,3 @@ spec:
     protocol: TLS
   endpoints:
   - address:  api.exate.co
-
----
-apiVersion: networking.istio.io/v1beta1
-kind: DestinationRule
-metadata:
-  name:  originate-tls-apigator-svc
-spec:
-  host: exate.co
-  trafficPolicy:
-    tls:
-      mode: SIMPLE
-
-
-
-

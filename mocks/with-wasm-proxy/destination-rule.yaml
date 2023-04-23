@@ -1,0 +1,10 @@
+# This Will make sure there will be TLS origination when client call this external service
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name:  originate-tls-apigator-svc
+spec:
+  host: exate.co
+  trafficPolicy:
+    tls:
+      mode: SIMPLE

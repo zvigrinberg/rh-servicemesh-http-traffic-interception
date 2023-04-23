@@ -13,6 +13,7 @@ resources:
 - ./virtual-service.yaml
 - ./ingress-gateway.yaml
 - ./wasm-plugin.yaml
+- ./destination-rule.yaml
 
 commonLabels:
   purpose: mock-microservice
