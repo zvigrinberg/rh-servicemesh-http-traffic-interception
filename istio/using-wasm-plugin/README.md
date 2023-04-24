@@ -268,4 +268,5 @@ oc apply -f ../../rest-client-pod-sidecar.yaml -n test-wasm
 14. At the end - Delete Everything
 ```shell
 kustomize build ../../mocks/with-wasm-proxy/ | oc delete -f -
+oc delete -f ../../rest-client-pod-sidecar.yaml -n test-wasm --grace-period=0 --force
 ```
