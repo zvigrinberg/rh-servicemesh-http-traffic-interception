@@ -10,50 +10,22 @@ To Intercept http  Traffic on the request and on the response paths without chan
 ```shell
 oc new-project test
 ```
+or switch to test project
+```shell
+oc project test
+```
 
 2. [Install RH Service mesh Using the operator](../rhsm-istio-operator/servicemesh-operator/README.md), with test project inside the ServiceMesh MemberRoll Instance.
-3. Deploy Istio' `ProxyConfig` to set environment variables inside sidecar proxy of pod of the employees microservice.
-```yaml
-apiVersion: networking.istio.io/v1beta1
-kind: ProxyConfig
-metadata:
-  name: employees-proxy-config
-  namespace: test
-spec:
-  selector:
-    matchLabels:
-      app: employees
-  concurrency: 0
-  environmentVariables:
-#    apiGatorAddress: https://api.exate.co:443/apigator/protect/v1/dataset
-    manifestName: "Employee"
-    jobType: "Restrict"
-    protectNullValues: "true"
-    preserveStringLength: "false"
-    snapshotDate: "2023-03-20T00:00:00Z"
-    restrictedText: "*********"
-    dataSetType: JSON
-    apiKey: ChangeMe
-    clientId: postman
-    grantType: client_credentials
-    clientSecret: ChangeMe
-
-
-
-```
+3. Deploy a mocked microservice employees ( using Wiremock MOCK Server):
 ```shell
-oc apply -f ../../mocks/with-lua-http-filter-unsorted/proxy-config.yaml
+oc apply --kustomize=../../mocks/deploy-microservice-alone
 ```
 
-4. Deploy a mocked microservice employees ( using Wiremock MOCK Server):
+4. First, Invoke the microservice without intercepting it with envoyfilter
 ```shell
-oc apply --kustomize=../../mocks/with-lua-http-filter-unsorted
-```
-
-
-5. First, Invoke the microservice without intercepting it with envoyfilter
-```shell
-curl -i --location --request POST 'http://istio-ingressgateway-istio-system.apps.exate-us-west.fsi.rhecoeng.com/employees' --header 'Content-Type: application/json' -d '{"countryCode": "GB", "dataOwningCountryCode": "IT"}'
+curl --location --request POST 'http://istio-ingressgateway-istio-system.apps.exate-us-west.fsi.rhecoeng.com/employees' --header 'Content-Type: application/json' -d '{"countryCode": "GB", "dataOwningCountryCode": "IT"}' | jq .
+sleep 2
+oc delete --kustomize=../../mocks/deploy-microservice-alone 
 ```
 Output:
 ```shell
@@ -86,6 +58,40 @@ matched-stub-id: 89052c3b-6c50-4818-ad8a-c4f90a7d9563
     }
 }
 ```
+
+5. Deploy Istio' `ProxyConfig` to set environment variables inside sidecar proxy of pod of the employees microservice.
+```yaml
+apiVersion: networking.istio.io/v1beta1
+kind: ProxyConfig
+metadata:
+  name: employees-proxy-config
+  namespace: test
+spec:
+  selector:
+    matchLabels:
+      app: employees
+  concurrency: 0
+  environmentVariables:
+#    apiGatorAddress: https://api.exate.co:443/apigator/protect/v1/dataset
+    manifestName: "Employee"
+    jobType: "Restrict"
+    protectNullValues: "true"
+    preserveStringLength: "false"
+    snapshotDate: "2023-03-20T00:00:00Z"
+    restrictedText: "*********"
+    dataSetType: JSON
+    apiKey: ChangeMe
+    clientId: postman
+    grantType: client_credentials
+    clientSecret: ChangeMe
+
+
+
+```
+```shell
+oc apply -f ../../mocks/with-lua-http-filter-unsorted/proxy-config.yaml
+```
+
 
 6. Create the EnvoyFilter on the cluster (Pay attention to the `Cluster` Definition - Starting with `applyTo: CLUSTER`, it defined an upstream HTTPS Connection to apiGator Service to be available from the lua code )
 ```yaml
@@ -276,7 +282,7 @@ set-cookie: cd10b69e39387eb7ec9ac241201ab1ab=7707cb491b328913d50465deab41c3fb; p
 {"dataSet":"{\n  \"employees\": {\n    \"employee\": [\n      {\n        \"id\": \"1\",\n        \"firstName\": \"*********\",\n        \"lastName\": \"*********\",\n        \"fullName\": \"Robert Brownforest\",\n        \"DOB\": \"01/01/0001\",\n        \"email\": \"RB1@exate.com\",\n        \"photo\": \"https://pbs.twimg.com/profile_images/735509975649378305/B81JwLT7.jpg\"\n      },\n      {\n        \"id\": \"2\",\n        \"firstName\": \"*********\",\n        \"lastName\": \"*********\",\n        \"fullName\": \"Rip Van Winkle\",\n        \"DOB\": \"01/01/0001\",\n        \"email\": \"RVW1@exate.com\",\n        \"photo\": \"https://pbs.twimg.com/profile_images/735509975649378305/B81JwLT7.jpg\"\n      }\n    ]\n  }\n}"}
 ```
 
-10. Steps 3-8 can be automated using a `kustomization` overlay, if you have `kustomize` version >= 5.0.0,
+10. Steps 5-8 can be automated using a `kustomization` overlay, if you have `kustomize` version >= 5.0.0,
     Then run the following to automate the whole process.
 ```shell
 kustomize build ../../mocks/with-lua-http-filter-sorted | oc apply -f -
@@ -297,13 +303,18 @@ Note: You can Enter the following command and copy+paste it into browser in orde
 oc get route kiali -n istio-system -o=jsonpath="{..spec.host}"
 ```
 
-12. Invoke 2 invocations of service, 1 via ingress gateway , and 1 from inside the mesh , 50 times in loop
+12. Deploy rest api client pod in order to be able to invoke the service also from within the mesh
+```shell
+ oc apply -f ../../rest-client-pod-sidecar.yaml -n test 
+```
+
+13. run 2 invocations of service, 1 via ingress gateway , and 1 from inside the mesh , 50 times in loop
 ```shell
 export INGRESS_HOST=http://istio-ingressgateway-istio-system.apps.exate-us-west.fsi.rhecoeng.com
 export HOST=http://employees-api.test:9999
 for i in {1..50}
 do 
-curl --location --request POST ''$HOST'/employees' --header 'Content-Type: application/json'  --data-raw '{"countryCode": "GB", "dataOwningCountryCode": "GB"}'
+oc exec rest-api-client -- curl --location --request POST ''$HOST'/employees' --header 'Content-Type: application/json'  --data-raw '{"countryCode": "GB", "dataOwningCountryCode": "GB"}'
 sleep 1
 echo
 echo
@@ -313,10 +324,11 @@ echo
 done
 ```
 
-13. Check the kiali dashboard for visualization of how the traffic flows.
+14. Check the kiali dashboard for visualization of how the traffic flows.
 
 
-14. When finished, uninstall everything:
+15. When finished, uninstall everything:
 ```shell
 kustomize build ../../mocks/with-lua-http-filter-unsorted | oc delete -f -
+oc delete -f ../../rest-client-pod-sidecar.yaml -n test --grace-period=0 --force  
 ```

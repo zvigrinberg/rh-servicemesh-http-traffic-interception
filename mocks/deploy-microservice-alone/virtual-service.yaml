@@ -1,0 +1,21 @@
+kind: VirtualService
+apiVersion: networking.istio.io/v1alpha3
+metadata:
+  name: employees-api
+  namespace: test
+  labels:
+    policyResource: "true"
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - demo-ingress      
+  http:
+  - match:
+    - uri:
+        exact: "/employees"
+    route:
+    - destination:
+        host: employees-api.test.svc.cluster.local
+        port:
+          number: 9999
