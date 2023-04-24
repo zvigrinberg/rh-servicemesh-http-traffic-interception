@@ -38,8 +38,9 @@ podman login registry-server-address.io --username youruser
 podman push registry-server-address.io/youraccount/traffic-interceptor-quarkus:1
 ```
 
-**Note: The proxy application assuming that per pod,  there is only one pod' container port exposed through k8s service, and this is the microservice' serving port.** 
+
 #### Ambassador Mode
+**Note: In this Mode, The proxy application assuming that per pod,  there is only one pod' container port exposed through k8s service, and this is the microservice' serving port.** 
 1. create new project test-ambassador
 ```shell
 oc new-project test-ambassador
