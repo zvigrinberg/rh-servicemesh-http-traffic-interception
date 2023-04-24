@@ -125,13 +125,19 @@ Note: You can Enter the following command and copy+paste it into browser in orde
 oc get route kiali -n istio-system -o=jsonpath="{..spec.host}"
 ```
 
+**Note: For the following command , you will need a client-rest-api pod, here is the command to deploy ir in this namespace:**
+```shell
+oc apply -f ../../rest-client-pod-sidecar.yaml -n test-ambassador
+```
+
 9. Invoke 2 invocations to service, 1 via ingress gateway , and 1 from inside the mesh , 50 times in loop
 ```shell
+
 export INGRESS_HOST=http://istio-ingressgateway-istio-system.apps.exate-us-west.fsi.rhecoeng.com
 export HOST=http://employees-api.test-ambassador:9999
 for i in {1..50}
 do 
-curl --location --request POST ''$HOST'/employees' --header 'Content-Type: application/json'  --data-raw '{"countryCode": "GB", "dataOwningCountryCode": "GB"}'
+oc exec rest-api-client -- curl --location --request POST ''$HOST'/employees' --header 'Content-Type: application/json'  --data-raw '{"countryCode": "GB", "dataOwningCountryCode": "GB"}'
 sleep 1
 echo
 echo
@@ -147,11 +153,16 @@ done
 11. When finished, uninstall everything:
 ```shell
 kustomize build ../../mocks/with-ambassador | oc delete -f -
+oc delete -f ../../rest-client-pod-sidecar.yaml -n test-ambassador --grace-period=0 --force
 ```
 
 #### Standalone Mode
 
-1. If needed, Repeat Steps 1-2 from [Ambassador Mode Procedure](#ambassador-Mode)
+1. If needed, Repeat Step 2 from [Ambassador Mode Procedure](#ambassador-Mode) and switch to/create project test-sa
+```shell
+oc project test-sa
+```
+
 2. Deploy Ingress Gateway to define ingress endpoint for the microservice in the mesh:
 ```yaml
 apiVersion: networking.istio.io/v1alpha3
@@ -301,7 +312,7 @@ done
 
 8. In parallel , on another terminal window, create a rest client pod and enter it:
 ```shell
-oc apply -f ../../rest-client-pod-sidecar.yaml
+oc apply -f ../../rest-client-pod-sidecar.yaml -n test-sa
 oc wait --for=condition=Ready=true pod/rest-api-client
 oc exec -it rest-api-client -- bash
 ```
@@ -322,4 +333,5 @@ done
 10. When finished, uninstall everything:
 ```shell
 kustomize build ../../mocks/with-proxy-interceptor-standalone | oc delete -f -
+oc delete -f ../../rest-client-pod-sidecar.yaml -n test-sa --grace-period=0 --force
 ```
