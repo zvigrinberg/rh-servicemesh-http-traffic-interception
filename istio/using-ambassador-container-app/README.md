@@ -116,9 +116,35 @@ set-cookie: cd10b69e39387eb7ec9ac241201ab1ab=7707cb491b328913d50465deab41c3fb; p
 
 {"dataSet":"{\n  \"employees\": {\n    \"employee\": [\n      {\n        \"id\": \"1\",\n        \"firstName\": \"*********\",\n        \"lastName\": \"*********\",\n        \"fullName\": \"Robert Brownforest\",\n        \"DOB\": \"01/01/0001\",\n        \"email\": \"RB1@exate.com\",\n        \"photo\": \"https://pbs.twimg.com/profile_images/735509975649378305/B81JwLT7.jpg\"\n      },\n      {\n        \"id\": \"2\",\n        \"firstName\": \"*********\",\n        \"lastName\": \"*********\",\n        \"fullName\": \"Rip Van Winkle\",\n        \"DOB\": \"01/01/0001\",\n        \"email\": \"RVW1@exate.com\",\n        \"photo\": \"https://pbs.twimg.com/profile_images/735509975649378305/B81JwLT7.jpg\"\n      }\n    ]\n  }\n}"}
 ```
+8.  Open Kiali Dashboard , and if needed, authenticate using Openshift Credentials:
+```shell
+xdg-open http://$(oc get route kiali -n istio-system -o=jsonpath="{..spec.host}")
+```
+Note: You can Enter the following command and copy+paste it into browser in order to enter it manually in the URL bar:
+```shell
+oc get route kiali -n istio-system -o=jsonpath="{..spec.host}"
+```
+
+9. Invoke 2 invocations to service, 1 via ingress gateway , and 1 from inside the mesh , 50 times in loop
+```shell
+export INGRESS_HOST=http://istio-ingressgateway-istio-system.apps.exate-us-west.fsi.rhecoeng.com
+export HOST=http://employees-api.test-ambassador:9999
+for i in {1..50}
+do 
+curl --location --request POST ''$HOST'/employees' --header 'Content-Type: application/json'  --data-raw '{"countryCode": "GB", "dataOwningCountryCode": "GB"}'
+sleep 1
+echo
+echo
+curl --location --request POST ''$INGRESS_HOST'/employees' --header 'Content-Type: application/json'  --data-raw '{"countryCode": "GB", "dataOwningCountryCode": "GB"}'
+echo  
+echo
+done
+```
+
+10. Check the kiali dashboard for visualization of how the traffic flows.
 
 
-8. When finished, uninstall everything:
+11. When finished, uninstall everything:
 ```shell
 kustomize build ../../mocks/with-ambassador | oc delete -f -
 ```

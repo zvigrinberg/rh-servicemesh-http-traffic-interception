@@ -287,7 +287,36 @@ kustomize build ../../mocks/with-lua-http-filter-unsorted | oc apply -f -
 oc wait --for=condition=Available=true deployment/employees-api
 oc rollout restart deployment employees-api
 ```
-11. When finished, uninstall everything:
+
+11. Open Kiali Dashboard , and if needed, authenticate using Openshift Credentials:
+```shell
+xdg-open http://$(oc get route kiali -n istio-system -o=jsonpath="{..spec.host}")
+```
+Note: You can Enter the following command and copy+paste it into browser in order to enter it manually in the URL bar:
+```shell
+oc get route kiali -n istio-system -o=jsonpath="{..spec.host}"
+```
+
+12. Invoke 2 invocations of service, 1 via ingress gateway , and 1 from inside the mesh , 50 times in loop
+```shell
+export INGRESS_HOST=http://istio-ingressgateway-istio-system.apps.exate-us-west.fsi.rhecoeng.com
+export HOST=http://employees-api.test:9999
+for i in {1..50}
+do 
+curl --location --request POST ''$HOST'/employees' --header 'Content-Type: application/json'  --data-raw '{"countryCode": "GB", "dataOwningCountryCode": "GB"}'
+sleep 1
+echo
+echo
+curl --location --request POST ''$INGRESS_HOST'/employees' --header 'Content-Type: application/json'  --data-raw '{"countryCode": "GB", "dataOwningCountryCode": "GB"}'
+echo  
+echo
+done
+```
+
+13. Check the kiali dashboard for visualization of how the traffic flows.
+
+
+14. When finished, uninstall everything:
 ```shell
 kustomize build ../../mocks/with-lua-http-filter-unsorted | oc delete -f -
 ```
