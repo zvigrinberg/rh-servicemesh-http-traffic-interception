@@ -189,7 +189,7 @@ spec:
 
       - name: PRESERVE_STRING_LENGTH
         valueFrom: HOST
-# Envoy proxy Cluster name.
+# Envoy proxy Cluster name of interceptor external service.
       - name: INTERCEPTOR_CLUSTER_NAME
         value: outbound|443||exate.co
 
