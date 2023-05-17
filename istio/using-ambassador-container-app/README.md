@@ -39,6 +39,170 @@ podman push registry-server-address.io/youraccount/traffic-interceptor-quarkus:1
 ```
 
 
+#### Custom Generic Proxy Implementation ( Reduced Code for overview reviewal):
+
+1. Chose [JAVA Quarkus Framework](https://quarkus.io/) to build the Proxy Interceptor Application.
+2. Defined A Controller class with Two Generic Java Methods Endpoints, that are being invoked by all POST and GET methods that clients requests from the application:
+```java
+@ApplicationScoped
+@AllArgsConstructor
+@Data
+@Path("")
+public class AllResources {
+  //... code was reduced, only main parts for understanding remained.
+    @Inject
+    @Named("InvokeMicroserviceImpl")
+    protected InvokeMicroservice invokeMicroservice;
+
+    public AllResources() {
+    }
+
+    @ConfigProperty(name = "general.interceptor.mode")
+    String interceptorMode;
+
+    @ConfigProperty(name = "general.interceptor.servicePort")
+    String servicePort;
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/{s:.*}")
+    public Response handleGet(@HeaderParam("x-route-to") String routeTo, @HeaderParam("x-host-name") String hostName, @HeaderParam("x-port-no") String portNumber) {
+        logger.info("got a get Response");
+        ServiceParametersEntity serviceParametersEntity = setServiceParameters(hostName, portNumber);
+// Invoke Microservice by rest client and return response , this will be intercepted by the ServerResponseFilter method in the filter class.
+        MyResponseEntity response = invokeMicroservice.run(routeTo, serviceParametersEntity.getFinalPort(), serviceParametersEntity.getTransportAndHost());
+        return Response.ok(response.getResponseBody()).replaceAll(response.getHeaders()).build();
+
+    }
+
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/{s:.*}")
+    public Response handlePost(@HeaderParam("x-route-to") String routeTo, @HeaderParam("x-host-name") String hostName, @HeaderParam("x-port-no") String portNumber) {
+        logger.info("got a POST Response");
+        ServiceParametersEntity serviceParametersEntity = setServiceParameters(hostName, portNumber);
+      // Invoke Microservice by rest client and return response , this will be intercepted by the ServerResponseFilter method in the filter class.
+        MyResponseEntity response = invokeMicroservice.run(routeTo, serviceParametersEntity.getFinalPort(), serviceParametersEntity.getTransportAndHost());
+        logger.infof("Response body from microservice : %s", response.getResponseBody());
+        return Response.ok(response.getResponseBody()).replaceAll(response.getHeaders()).build();
+    }
+}
+```
+3. Using a ServerRequestFilter and ServerResponseFilter to define HTTP Filter that will intercept the request before the request, and after the response, in order to intercept and manipulate payload:
+```java
+@Data
+public class WebFilter {
+    //... part of the code ommited , only code essential for understanding remained.
+    @Inject
+    protected SharedBuffer sharedBuffer;
+    // Inject from application.properties all parameters derived from default/environment variables/pod annotations(the latter overrides all the formers)
+    @ConfigProperty(name = "general.interceptor.address")
+    String interceptorAddress;
+    @ConfigProperty(name = "general.interceptor.tokenAddress")
+    String tokenAddress;
+
+    @ConfigProperty(name = "general.interceptor.snapshotDate")
+    String snapshotDate;
+    @ConfigProperty(name = "general.interceptor.restrictedText")
+    String restrictedText;
+    @ConfigProperty(name = "general.interceptor.manifestName")
+    String manifestName;
+    @ConfigProperty(name = "general.interceptor.protectNullValues")
+    String protectNullValues;
+    @ConfigProperty(name = "general.interceptor.preserveStringLength")
+    String preserveStringLength;
+    @ConfigProperty(name = "general.interceptor.apiKey")
+    protected String apiKey;
+    @ConfigProperty(name = "general.interceptor.grantType")
+    String grantType;
+    @ConfigProperty(name = "general.interceptor.clientId")
+    String clientId;
+    @ConfigProperty(name = "general.interceptor.clientSecret")
+    protected String clientSecret;
+    @ConfigProperty(name = "general.interceptor.dataSetType")
+    String dataSetType;
+    @ConfigProperty(name = "general.interceptor.jobType")
+    String jobType;
+
+
+    private static final Client client = ClientBuilder.newClient();
+
+    // this method being called just before the POST/GET method of the controller is being called 
+    // and after the client invoke the HTTP Request.
+    @ServerRequestFilter
+    public void getRequestPath(ContainerRequestContext requestContext) {
+        String requestBody = "";
+        String headers = "";
+        try {
+            requestBody = new String(requestContext.getEntityStream().readAllBytes());
+            headers = om.writerWithDefaultPrettyPrinter().writeValueAsString(requestContext.getHeaders());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        logger.infof("Received a Request, \n Headers= %s , \n url = %s  , \n body = %s \n", headers, requestContext.getUriInfo().getRequestUri().toString(), requestBody);
+        Map bodyMap = new HashMap();
+        try {
+            bodyMap = om.readValue(requestBody, Map.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        // save the body of request to a shared buffer structure,  in order to propagate part of the body to the invocation of the interceptor on the response path.
+        sharedBuffer.getMapOfKeys().put(Span.current().getSpanContext().getTraceId(), bodyMap);
+        ;
+        // add 3 headers to be used by GET and POST controllers methods in order to callthe actual microservice/application endpoint. 
+        requestContext.getHeaders().put("x-route-to", List.of(requestContext.getUriInfo().getPath()));
+        requestContext.getHeaders().put("x-host-name", List.of(requestContext.getUriInfo().getRequestUri().getHost()));
+        requestContext.getHeaders().put("x-port-no", List.of(Integer.valueOf(requestContext.getUriInfo().getRequestUri().getPort()).toString()));
+    }
+
+    // this is called right after the POST/GET controllers methods are being returned, and when finished
+    //   the manipulations of payload are returned to the client.   
+    @ServerResponseFilter
+    public void getResponsePath(ContainerResponseContext responseContext) {
+        logger.info("in getResponsePath");
+        String responseBodyMS = responseContext.getEntity().toString();
+        //get token from interceptor's token endpoint.
+        String token = getTokenForInvocation();
+        logger.infof("Retrieved Token=%s", token);
+        //invoke interceptor and passing to it the token for authentication, and response payload from microservice.
+        MyResponseEntity theResponse = invokeInterceptor(token, responseBodyMS);
+        logger.infof("Response from Interceptor Service=%s", theResponse);
+        // override microservice response with interceptor' response, both body and headers.
+        responseContext.setEntity(theResponse.getResponseBody());
+        responseContext.getHeaders().clear();
+        responseContext.getHeaders().putAll(theResponse.getHeaders());
+
+
+    }
+}
+```
+4. Create a ConfigSource implementation that will make the openshift annotations values to become a configuration source with greater precedence than environment variables, it's mapping the annotations using K8S Downward API volume mounted as volume in the container of the custom proxy interceptor App:
+```java
+@StaticInitSafe
+public class OpenshiftAnnotationsConfigSource implements ConfigSource {
+    public final static int annotationsConfigSourceOrdinal = 280;
+
+    private static final Logger logger = Logger.getLogger("OpenshiftAnnotationsConfigSource.java");
+    private static final Map<String, String> annotations = new HashMap<>();
+
+    static {
+//        String interceptorMode = ConfigProvider.getConfig().getValue("general.interceptor.mode",String.class);
+//        Default running mode for proxy is ambassador container
+        String interceptorMode = System.getenv("INTERCEPTOR_MODE") == null ? "ambassador" : System.getenv("INTERCEPTOR_MODE");
+        if (interceptorMode.trim().equalsIgnoreCase("ambassador")) {
+            logger.info("Proxy Interceptor is running in ambassador container mode, overriding configuration and environment variables from pod' Annotations (for all config that exists)");
+            String annotationsPath = System.getenv("ANNOTATIONS_PATH");
+            if (annotationsPath == null)
+                annotationsPath = "/tmp/annotations/..data/annotations";
+
+            loadAnnotationToConfig(annotationsPath);
+        } else {
+            logger.info("Proxy Interceptor is running in standalone mode, Configuration is overridden from environment variables only.");
+        }
+    }
+}
+```
 #### Ambassador Mode
 **Note: In this Mode, The proxy application assuming that per pod,  there is only one pod' container port exposed through k8s service, and this is the microservice' serving port.** 
 1. create new project test-ambassador
