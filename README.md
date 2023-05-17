@@ -23,3 +23,10 @@
 ```shell
 oc replace -f istio/rhsm-istio-operator/servicemesh-operator/servicemesh-member-roll.yaml --force
 ```
+
+#### General Troubleshooting 
+- In case you're getting error 503 ( Service Unavailable ) when trying to access through ingress gateway route, it means that you have duplicate gateway definitions that selecting the ingress gateway from istio control plane namespace at least in two namespaces, In order to diagnose run the following command:
+    ```shell
+     oc get gateway -A
+    ```
+    If you get more than one result, then this is the problem and you should delete the leftover gateway from the namespace which you're not currently working on, wait few seconds and you'll get again 200 status as expected.
