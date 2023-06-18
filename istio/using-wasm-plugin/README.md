@@ -257,7 +257,7 @@ xdg-open http://$(oc get route kiali -n istio-system -o=jsonpath="{..spec.host}"
 oc apply -f ../../rest-client-pod-sidecar.yaml -n test-wasm
 ```
 
-12. Run 50 REST API Calls to Microservice
+12. Run 50 REST API Calls to Microservice, You should see all response payloads "manipulated" by the interceptor:
 ```shell
  for i in {1..50}; do echo; oc exec -it rest-api-client -- curl  -i -X POST http://employees-api.test-wasm.svc.cluster.local:9999/employees -d '{"countryCode": "GB", "dataOwningCountryCode": "GB" }'  --header 'Content-Type: application/json' --header 'Accept: application/json'; echo; done
 ```
