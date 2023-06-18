@@ -205,9 +205,9 @@ public class OpenshiftAnnotationsConfigSource implements ConfigSource {
 ```
 #### Ambassador Mode
 **Note: In this Mode, The proxy application assuming that per pod,  there is only one pod' container port exposed through k8s service, and this is the microservice' serving port.** 
-1. create new project test-ambassador
+1. Go to project test-ambassador
 ```shell
-oc new-project test-ambassador
+oc project test-ambassador
 ```
 
 2. If not already installed on cluster, [Install RH Service mesh Using the operator](../rhsm-istio-operator/servicemesh-operator/README.md), with test-ambassador project inside the ServiceMesh MemberRoll Instance.

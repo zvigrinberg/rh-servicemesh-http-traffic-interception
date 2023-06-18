@@ -35,8 +35,9 @@ oc new-project istio-system
 oc apply -f servicemesh-control-plane.yaml
 ```
 
-7. Add 2 namespaces to the mesh , to be managed by control plane
+7. Create 4 namespaces and add them to the mesh , to be managed by control plane
 ```shell
+for i in test test-sa test-ambassador test-wasm; do oc new-project $i; done
 oc apply -f servicemesh-member-roll.yaml
 ```
 8. Wait until all components are ready

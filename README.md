@@ -4,6 +4,11 @@
  To demonstrate several ways how to intercept http traffic using RH Service MESH without changing Clients' and servers' code.
 
 
+### Prerequisites to Demos
+
+- You need to install RH Service Mesh operator and install a control plane using it.
+  Please go over the following manual : 
+  [here](./istio/rhsm-istio-operator/servicemesh-operator/README.md)
 
 ### Demos
 
