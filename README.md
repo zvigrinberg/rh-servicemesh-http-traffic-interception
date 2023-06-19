@@ -6,11 +6,25 @@
 
 ### Prerequisites to Demos
 
-- You need to install RH Service Mesh operator and install a control plane using it.
+- You need to install RH Service Mesh operator and install SMCP custom resource (Service Mesh control plane) using it, in order to deploy a RH Service mesh control plane.
+
   Please go over the following manual : 
-  [here](./istio/rhsm-istio-operator/servicemesh-operator/README.md)
+  [Deploying RHSM using the Operator](./istio/rhsm-istio-operator/servicemesh-operator/README.md)
 
 ### Demos
+
+**_Note: Most demos listed below assuming default setting of outboundTrafficPolicy=ALLOW_ANY._**
+
+In case you want to enable REGISTER_ONLY Mode, you need to add the following yaml block to  [SMCP custom resource](./istio/rhsm-istio-operator/servicemesh-operator/servicemesh-control-plane.yaml)
+```yaml
+spec:
+   proxy:
+     networking:
+       trafficControl:
+         outbound:
+           policy: REGISTRY_ONLY
+```
+In case you running in this mode, you need to define a [`ServiceEntry`](./mocks/with-lua-http-filter-unsorted/service-entry.yaml) Resource as per demo, in order to enable traffic to External Interceptor service.
 
 #### Tested Configuration
 * All Demos were Tested with the following versions:
